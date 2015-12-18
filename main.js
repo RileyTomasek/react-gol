@@ -67,6 +67,10 @@ function updateGrid(oldGrid) {
     return newGrid;
 }
 
+function cloneGrid(grid) {
+    return grid.map((arr) => arr.slice(0));
+}
+
 var GameOfLife = React.createClass({
     getInitialState: function() {
         return {grid: initializeGrid()};
@@ -74,16 +78,28 @@ var GameOfLife = React.createClass({
 
     componentDidMount: function() {
         setInterval(() => {
-            var clonedGrid = this.state.grid.map((arr) => arr.slice(0));
             this.setState({
-                grid: updateGrid(clonedGrid)
+                grid: updateGrid(cloneGrid(this.state.grid))
             });
-        }, 300);
+        }, 3000);
+    },
+
+    toggleCell: function(row, column) {
+        var grid = cloneGrid(this.state.grid);
+        grid[row][column] = grid[row][column] === EMPTY ? FULL : EMPTY;
+        this.setState({grid: grid});
     },
 
     render: function() {
         var rows = this.state.grid.map((row, index) => {
-            return <Row key={index} cells={row} />;
+            return (
+                <Row
+                    key={index}
+                    cells={row}
+                    rowIndex={index}
+                    toggleCell={this.toggleCell}
+                />
+            );
         });
         return <div>{rows}</div>
     }
@@ -95,7 +111,15 @@ var Row = React.createClass({
     },
     render: function() {
         var cells = this.props.cells.map((cell, index) => {
-            return <Cell key={index} state={cell} />;
+            return (
+                <Cell
+                    key={index}
+                    state={cell}
+                    rowIndex={this.props.rowIndex}
+                    colIndex={index}
+                    toggleCell={this.props.toggleCell}
+                />
+            );
         });
         return <div className='row'>{cells}</div>;
     }
@@ -105,15 +129,16 @@ var Cell = React.createClass({
     shouldComponentUpdate: function(nextProps) {
         return this.props.state !== nextProps.state;
     },
+    handleClick: function() {
+        this.props.toggleCell(this.props.rowIndex, this.props.colIndex);
+    },
     render: function() {
         var classes = classNames({
             cell: true,
             empty: this.props.state === EMPTY,
             full: this.props.state === FULL
         });
-        return (
-            <div className={classes}></div>
-       )
+        return <div className={classes} onClick={this.handleClick} />;
     }
 });
 
